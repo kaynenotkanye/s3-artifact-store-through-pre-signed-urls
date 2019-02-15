@@ -1,8 +1,8 @@
 # Simple Artifact Store - private, encrypted S3 bucket
-This project was created as a proof-of-concept. It is a Golang web application designed to run in AWS Elastic Beanstalk.  The web application will silently output and redirect pre-signed URLs that allows third parties temporary read access (s3:GetObject) to an S3 object.  These pre-signed URLs have a specific time-to-live and will expire in a specified amount of time.  Typically, sharing data in S3 buckets either requires much adminstrator overhead by configuring bucket policies, and constant modifications to IAM roles to allow cross-account access (especially if you need to allow more end-users or business units as an on-going effort). The main advantage with this application is that there is no need for these constant administrative tasks.  In fact, this allows third parties to perform get operations on a private S3 bucket without them even needing an AWS account.  Please keep in mind that this is a proof-of-concept and more security measures should be implemented.  I will try to list out all the advantages and disadvantages.
+This project was created as a proof-of-concept. It is a Golang web application designed to run in AWS Elastic Beanstalk.  The web application will silently output and redirect pre-signed URLs that allows third parties temporary read access (s3:GetObject) to an S3 object.  These pre-signed URLs have a specific time-to-live and will expire in a specified amount of time.  Typically, sharing data in S3 buckets either requires much administrative overhead by configuring bucket policies, and constant modifications to IAM roles to allow cross-account access (especially if you need to allow more end-users or business units as an on-going effort). The main advantage with this application is that there is no need for these constant administrative tasks.  In fact, this allows third parties to perform get operations on a private S3 bucket without them even needing an AWS account.  Please keep in mind that this is a proof-of-concept and more security measures should be implemented.  I will try to list out all the advantages and disadvantages.
 
 ### Advantages
-* The S3 bucket created is a private bucket (not accessible to the public directly), and server-side encrypted (AES-256).  (I have not tried KMS.)
+* The S3 bucket created is a private bucket (not accessible to the public directly), and server-side encrypted (AES-256).  (I have not tried KMS yet. It would probably just need more IAM policies attached.)
 * You do not need to manage cross-account assumed roles in IAM
 * You do not need to manage any bucket policies
 * You manage one policy in AWS (attached to the Elastic Beanstalk EC2 role), and can fine-tune that policy by allowing/denying specific folders under the S3 bucket
@@ -12,9 +12,10 @@ This project was created as a proof-of-concept. It is a Golang web application d
 ### Disadvantages
 * Currently, this POC does not secure the web application in any way (though there is security through obscurity as clients need to know the exact path/to/s3object/filename)
 * Due to potential security issues, I would only advise to try this only if the contents allowed through the s3:GetObject policy do not contain any proprietary information.  Or if you were doing a POC of a POC.
+* SSL Certificates and Load Balancers were outside the scope of this project. These need to be configured if this is going to be used as a real service
 
 ### Pre-requisites
-* Create a private AES-256 encrypted S3 bucket. Thoughout my examples in this README, I will be the bucket name `artifact-store-test` as an example. Let's also assume that I have created this bucket in `us-west-2`
+* Create a private AES-256 encrypted S3 bucket. Throughout my examples in this README, I will be using the bucket name `artifact-store-test` as an example. Let's also assume that I have created this bucket in `us-west-2`
 * Create an IAM `s3:GetObject` policy to be used later. As an example, I have created the following:
 ```
 {
@@ -30,7 +31,7 @@ This project was created as a proof-of-concept. It is a Golang web application d
 }
 ```
 
-In the example above, this will essentially allow clients to perform Get operations only under `folder1`. Clients would not be able to download objects from `folder2`.  These are just simple examples. To be more accurate, this policy would also allow access to folder11, and folder12, if those existed.
+In the example above, this will essentially allow clients to perform Get operations only under `folder1`. Clients would not be able to download objects from `folder2`.  These are just simple examples. To be more accurate, this policy would also allow access to folder11, and folder12, if those happened to exist (they don't).
 
 ### Creating the zip file for Elastic Beanstalk
 Run `create_zip.sh`.  This should create `uploadThis.zip` in the same directory.
